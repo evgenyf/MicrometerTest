@@ -1,7 +1,9 @@
 package com.gigaspaces.micrometer;
 
 import io.micrometer.core.instrument.Clock;
+import io.micrometer.core.instrument.ImmutableTag;
 import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Tag;
 import io.micrometer.core.instrument.binder.jvm.ClassLoaderMetrics;
 import io.micrometer.core.instrument.binder.jvm.JvmGcMetrics;
 import io.micrometer.core.instrument.binder.jvm.JvmMemoryMetrics;
@@ -11,6 +13,8 @@ import io.micrometer.influx.InfluxConfig;
 import io.micrometer.influx.InfluxMeterRegistry;
 
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
 
 public class ReportVmAndSystemMetricsToInfluxDb {
 
@@ -18,12 +22,16 @@ public class ReportVmAndSystemMetricsToInfluxDb {
 
     public ReportVmAndSystemMetricsToInfluxDb(){
 
+        List<Tag> additionalTags = new ArrayList<>();
+        additionalTags.add(new ImmutableTag("PID", "123456"));
+        additionalTags.add(new ImmutableTag("IP", "123.456.789.10"));
+
         influxMeterRegistry = createRegistry();
 
         ClassLoaderMetrics classLoaderMetrics = new ClassLoaderMetrics();
         classLoaderMetrics.bindTo(influxMeterRegistry);
 
-        JvmMemoryMetrics jvmMemoryMetrics = new JvmMemoryMetrics();
+        JvmMemoryMetrics jvmMemoryMetrics = new JvmMemoryMetrics(additionalTags);
         jvmMemoryMetrics.bindTo(influxMeterRegistry);
 
         JvmGcMetrics jvmGcMetrics = new JvmGcMetrics();
