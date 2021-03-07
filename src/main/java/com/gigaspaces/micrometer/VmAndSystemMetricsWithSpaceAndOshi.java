@@ -100,6 +100,10 @@ public class VmAndSystemMetricsWithSpaceAndOshi {
         Gauge vmClassesLoadedGauge = Metrics.globalRegistry.find("jvm.classes.loaded").gauge();
         Gauge vmThreadsCountGauge = Metrics.globalRegistry.find("jvm.threads.live").gauge();
 
+        Gauge maxHeapGauge = Metrics.globalRegistry.find("jvm.memory.max").tag("area", "heap").gauge();
+        Gauge maxNonheapGauge = Metrics.globalRegistry.find("jvm.memory.max").tag("area", "nonheap").gauge();
+        //https://stackoverflow.com/questions/54591870/mismatch-between-spring-actuators-jvm-memory-max-metric-and-runtime-getruntim
+
         List<MemoryPoolMXBean> memoryPoolMXBeans = ManagementFactory.getPlatformMXBeans(MemoryPoolMXBean.class);
 
         List<String> heapMemoryPoolMXBeanIds = new ArrayList<>(3);
@@ -151,7 +155,6 @@ public class VmAndSystemMetricsWithSpaceAndOshi {
                 JVMStatistics jvmStatistics = spaceJvmProvider.getJVMStatistics();
                 if( latestStatistics != null ) {
                     double cpuFromXap = jvmStatistics.computeCpuPerc(latestStatistics);
-
                     System.out.println("\n============= CPU ==========");
                     System.out.println( "From Micrometer=" + processCpuUsedGauge.value() );
                     System.out.println( "From XAP=" + cpuFromXap );
@@ -165,6 +168,7 @@ public class VmAndSystemMetricsWithSpaceAndOshi {
 
                     double maxAccumulatedMemoryHeap = 0;
                     for( Gauge gauge : memoryMaxHeapGauges ){
+                        System.out.println( gauge.value() );
                         maxAccumulatedMemoryHeap += gauge.value();
                     }
 
@@ -192,7 +196,11 @@ public class VmAndSystemMetricsWithSpaceAndOshi {
                     System.out.println();
 
                     System.out.println( "From XAP max=" + toMB( jvmDetails.getMemoryHeapMax() ) + " MB" );
+                    System.out.println( "From Micrometer !!! heap max=" + toMB( maxHeapGauge.value() ) + " MB" );
+                    System.out.println( "From Micrometer !!! nonheap max=" + toMB( maxNonheapGauge.value() ) + " MB" );
+
                     System.out.println( "From Micrometer accumulated MAX heap=" + toMB( maxAccumulatedMemoryHeap ) + " MB" );
+                    System.out.println( "maxMemory=" + toMB( Runtime.getRuntime().maxMemory() ) + " MB" );
                     System.out.println();
 
                     System.out.println( "From XAP memoryNonheapUsed=" + toMB( jvmStatistics.getMemoryNonHeapUsed() ) + " MB" );
