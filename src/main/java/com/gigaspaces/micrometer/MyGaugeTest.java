@@ -27,14 +27,16 @@ public class MyGaugeTest {
         AtomicInteger myGauge = Metrics.globalRegistry.gauge("numberGauge", new AtomicInteger(0));
 
         myGauge.set( 123 );
-
-
         myGauge.set( 323 );
 
         System.out.println(myGauge.get());
 
         new CountedObject();
         Gauge gauge = Metrics.globalRegistry.find("gauge.objects.count").gauge();
+
+        Gauge gauge2 = Metrics.globalRegistry.find("numberGauge").gauge();
+        double value2 = gauge2.value();
+
         Iterable<Measurement> measure = gauge.measure();
         Iterator<Measurement> iterator = measure.iterator();
         System.out.println(iterator.hasNext());

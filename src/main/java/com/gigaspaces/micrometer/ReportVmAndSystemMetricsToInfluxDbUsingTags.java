@@ -16,18 +16,22 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 
-public class ReportVmAndSystemMetricsToInfluxDb {
+public class ReportVmAndSystemMetricsToInfluxDbUsingTags {
 
     private final MeterRegistry influxMeterRegistry;
 
-    public ReportVmAndSystemMetricsToInfluxDb(){
+    public ReportVmAndSystemMetricsToInfluxDbUsingTags(){
+
+        List<Tag> additionalTags = new ArrayList<>();
+        additionalTags.add(new ImmutableTag("PID", "123456"));
+        additionalTags.add(new ImmutableTag("IP", "123.456.789.10"));
 
         influxMeterRegistry = createRegistry();
 
         ClassLoaderMetrics classLoaderMetrics = new ClassLoaderMetrics();
         classLoaderMetrics.bindTo(influxMeterRegistry);
 
-        JvmMemoryMetrics jvmMemoryMetrics = new JvmMemoryMetrics();
+        JvmMemoryMetrics jvmMemoryMetrics = new JvmMemoryMetrics(additionalTags);
         jvmMemoryMetrics.bindTo(influxMeterRegistry);
 
         JvmGcMetrics jvmGcMetrics = new JvmGcMetrics();
@@ -68,7 +72,7 @@ public class ReportVmAndSystemMetricsToInfluxDb {
     }
 
     public static void main( String[] args ){
-        new ReportVmAndSystemMetricsToInfluxDb();
+        new ReportVmAndSystemMetricsToInfluxDbUsingTags();
         try {
             Thread.sleep( 20_000);
         } catch (InterruptedException e) {
