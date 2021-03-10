@@ -53,7 +53,7 @@ public class VmAndSystemMetrics {
     public static void main( String[] args ){
         VmAndSystemMetrics vmAndSystemMetrics = new VmAndSystemMetrics();
         try {
-            Thread.sleep( 20_000);
+            Thread.sleep( 3_000);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
@@ -69,7 +69,7 @@ public class VmAndSystemMetrics {
 
         long startTimeGetValue = System.currentTimeMillis();
         double memoryUsedValue = memoryUsedGauge.value();
-        System.out.println( "Getting value took:" + ( System.currentTimeMillis() - startTimeGetValue ) + " msec." );
+        //System.out.println( "Getting value took:" + ( System.currentTimeMillis() - startTimeGetValue ) + " msec." );
 
         double vmClassesLoaded = vmClassesLoadedGauge.value();
         double processCpuUsed = processCpuUsedGauge.value();

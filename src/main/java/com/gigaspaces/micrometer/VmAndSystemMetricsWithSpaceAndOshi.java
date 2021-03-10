@@ -3,6 +3,9 @@ package com.gigaspaces.micrometer;
 import com.gigaspaces.internal.jvm.JVMDetails;
 import com.gigaspaces.internal.jvm.JVMInfoProvider;
 import com.gigaspaces.internal.jvm.JVMStatistics;
+import com.gigaspaces.internal.os.OSDetails;
+import com.gigaspaces.internal.os.OSInfoProvider;
+import com.gigaspaces.internal.os.OSStatistics;
 import com.j_spaces.core.IJSpace;
 import com.j_spaces.core.admin.IRemoteJSpaceAdmin;
 import io.micrometer.core.instrument.Counter;
@@ -37,24 +40,9 @@ public class VmAndSystemMetricsWithSpaceAndOshi {
     private final ProcessorMetrics processorMetrics = new ProcessorMetrics();
     private final JvmThreadMetrics jvmThreadMetrics = new JvmThreadMetrics();
 
-    //TODO check os metrics: exposed only: cpu.usage, cpu.count, no memory
-    //TODO network statistics: NO
-    //TODO compare with oshi metrics
-    //TODO check Prometheus, how to report to it
-    //TODO how to report vm metrics with host and pid as an additional tags
-    //TODO check how to pull metrics data from client, how do another users implement it
-    //TODO extension for hsqldb
-
     public VmAndSystemMetricsWithSpaceAndOshi(){
 
         Metrics.addRegistry( simpleMeterRegistry );
-
-/*        classLoaderMetrics.bindTo(simpleMeterRegistry);
-        jvmMemoryMetrics.bindTo(simpleMeterRegistry);
-        jvmGcMetrics.bindTo(simpleMeterRegistry);
-        processorMetrics.bindTo(simpleMeterRegistry);
-        jvmThreadMetrics.bindTo(simpleMeterRegistry);*/
-
         classLoaderMetrics.bindTo(Metrics.globalRegistry);
         jvmMemoryMetrics.bindTo(Metrics.globalRegistry);
         jvmGcMetrics.bindTo(Metrics.globalRegistry);
@@ -67,7 +55,9 @@ public class VmAndSystemMetricsWithSpaceAndOshi {
     }
 
     private static JVMInfoProvider spaceJvmProvider = null;
+    private static OSInfoProvider osInfoProvider = null;
     private static JVMDetails jvmDetails = null;
+    private static OSDetails osDetails = null;
     private static JVMStatistics latestStatistics;
     public static void main( String[] args ){
         VmAndSystemMetricsWithSpaceAndOshi vmAndSystemMetrics = new VmAndSystemMetricsWithSpaceAndOshi();
@@ -83,6 +73,12 @@ public class VmAndSystemMetricsWithSpaceAndOshi {
                 spaceJvmProvider = ( JVMInfoProvider )spaceAdmin;
                 jvmDetails = spaceJvmProvider.getJVMDetails();
             }
+            if( spaceAdmin instanceof OSInfoProvider){
+                System.out.println("=====OSInfoProvider");
+                osInfoProvider = ( OSInfoProvider )spaceAdmin;
+                osDetails = osInfoProvider.getOSDetails();
+            }
+
         } catch (RemoteException e) {
             e.printStackTrace();
         }
@@ -95,6 +91,7 @@ public class VmAndSystemMetricsWithSpaceAndOshi {
             e.printStackTrace();
         }
 
+        Gauge systemCpuUsage = Metrics.globalRegistry.find( "system.cpu.usage" ).gauge();
         Gauge processCpuUsedGauge = Metrics.globalRegistry.find("process.cpu.usage").gauge();
         Counter vmGcMemoryAllocatedCounter = Metrics.globalRegistry.find( "jvm.gc.memory.allocated" ).counter();
         Gauge vmClassesLoadedGauge = Metrics.globalRegistry.find("jvm.classes.loaded").gauge();
@@ -153,14 +150,18 @@ public class VmAndSystemMetricsWithSpaceAndOshi {
         Runnable cpuFetchTask = () -> {
             try {
                 JVMStatistics jvmStatistics = spaceJvmProvider.getJVMStatistics();
+                OSStatistics osStatistics = osInfoProvider.getOSStatistics();
                 if( latestStatistics != null ) {
                     double cpuFromXap = jvmStatistics.computeCpuPerc(latestStatistics);
-                    System.out.println("\n============= CPU ==========");
+                    System.out.println("\n============= VM CPU ==========");
                     System.out.println( "From Micrometer=" + processCpuUsedGauge.value() );
                     System.out.println( "From XAP=" + cpuFromXap );
 
-                    System.out.println("\n============= MEMORY =============");
+                    System.out.println("\n============= OS CPU ==========");
+                    System.out.println( "From Micrometer=" + systemCpuUsage.value() );
+                    System.out.println( "From XAP=" + osStatistics.getCpuPerc() );
 
+                    System.out.println("\n=============VM MEMORY =============");
                     double usedAccumulatedMemoryHeap = 0;
                     for( Gauge gauge : memoryUsedHeapGauges ){
                         usedAccumulatedMemoryHeap += gauge.value();
@@ -168,7 +169,7 @@ public class VmAndSystemMetricsWithSpaceAndOshi {
 
                     double maxAccumulatedMemoryHeap = 0;
                     for( Gauge gauge : memoryMaxHeapGauges ){
-                        System.out.println( gauge.value() );
+                        //System.out.println( gauge.value() );
                         maxAccumulatedMemoryHeap += gauge.value();
                     }
 
@@ -187,20 +188,12 @@ public class VmAndSystemMetricsWithSpaceAndOshi {
                         usedAccumulatedMemoryNonheap += gauge.value();
                     }
 
-                    System.out.println( "From XAP=" + toMB( jvmStatistics.getMemoryHeapUsed() ) + " MB" );
+                    System.out.println( "From XAP used heap=" + toMB( jvmStatistics.getMemoryHeapUsed() ) + " MB" );
                     System.out.println( "From Micrometer, accumulated used heap=" + toMB( usedAccumulatedMemoryHeap ) + " MB" );
                     System.out.println();
 
                     System.out.println( "From XAP committed heap=" + toMB( jvmStatistics.getMemoryHeapCommitted() ) + " MB" );
                     System.out.println( "From Micrometer accumulated COMMITTED heap=" + toMB( committedAccumulatedMemoryHeap ) + " MB" );
-                    System.out.println();
-
-                    System.out.println( "From XAP max=" + toMB( jvmDetails.getMemoryHeapMax() ) + " MB" );
-                    System.out.println( "From Micrometer !!! heap max=" + toMB( maxHeapGauge.value() ) + " MB" );
-                    System.out.println( "From Micrometer !!! nonheap max=" + toMB( maxNonheapGauge.value() ) + " MB" );
-
-                    System.out.println( "From Micrometer accumulated MAX heap=" + toMB( maxAccumulatedMemoryHeap ) + " MB" );
-                    System.out.println( "maxMemory from Runtime=" + toMB( Runtime.getRuntime().maxMemory() ) + " MB" );
                     System.out.println();
 
                     System.out.println( "From XAP memoryNonheapUsed=" + toMB( jvmStatistics.getMemoryNonHeapUsed() ) + " MB" );
@@ -211,28 +204,13 @@ public class VmAndSystemMetricsWithSpaceAndOshi {
                     System.out.println( "From Micrometer accumulated COMMITTED nonheap=" + toMB( committedAccumulatedMemoryNonheap ) + " MB" );
                     System.out.println();
 
-                    System.out.println("============= END OF MEMORY =============");
+                    System.out.println( "From XAP max=" + toMB( jvmDetails.getMemoryHeapMax() ) + " MB" );
+                    System.out.println( "maxMemory from Runtime=" + toMB( Runtime.getRuntime().maxMemory() ) + " MB" );
+                    System.out.println( "From Micrometer !!! heap max=" + toMB( maxHeapGauge.value() ) + " MB" );
+                    //System.out.println( "From Micrometer !!! nonheap max=" + toMB( maxNonheapGauge.value() ) + " MB" );
+                    System.out.println( "From Micrometer accumulated MAX heap=" + toMB( maxAccumulatedMemoryHeap ) + " MB" );
 
-                    /*
-                    long memoryHeapUsed = jvmStatistics.getMemoryHeapUsed();
-                    long memoryNonheapUsed = jvmStatistics.getMemoryNonHeapUsed();
-                    long memoryHeapCommitted = jvmStatistics.getMemoryHeapCommitted();
-                    long memoryNonheapCommitted = jvmStatistics.getMemoryNonHeapCommitted();
-
-                    System.out.println( "From Micrometer=" + toMB( memoryUsedGauge.value() ) + " MB" );
-                    System.out.println( "From Micrometer heap=" + toMB( memoryUsedHeapGauge.value() ) + " MB" );
-                    System.out.println( "From Micrometer nonheap=" + toMB( memoryUsedNonheapGauge.value() ) + " MB" );
-
-                    System.out.println( "From Micrometer PsEdenSpace heap=" + toMB( memoryUsedHeapPsEdenSpaceGauge.value() ) + " MB" );
-                    System.out.println( "From Micrometer PsOldGen heap=" + toMB( memoryUsedHeapPsOldGenGauge.value() ) + " MB" );
-                    System.out.println( "From Micrometer PsSurvivorSpace heap=" + toMB( memoryUsedHeapPsSurvivorSpaceGauge.value() ) + " MB" );
-                    System.out.println( "From Micrometer all ids heap=" + toMB( memoryUsedHeapAllIdsGauge.value() ) + " MB" );
-
-                    System.out.println( "From Micrometer jvmMemoryHeapCommitted=" + toMB( jvmMemoryHeapCommittedGauge.value() ) + " MB" );
-                    System.out.println( "From Micrometer jvmMemoryNonheapCommitted=" + toMB( jvmMemoryNonheapCommittedGauge.value() ) + " MB" );
-                    System.out.println( "From Micrometer jvmMemoryHeapMax=" + toMB(jvmMemoryMaxHeapGauge.value() ) + " MB" );
-                    System.out.println( "From Micrometer jvmMemoryNonheapMax=" + toMB(jvmMemoryMaxNonheapGauge.value() ) + " MB" );*/
-                    //System.out.println( "From Micrometer TOTAL jvmMemoryMax=" + toMB(jvmMemoryMaxNonheapGauge.value() + jvmMemoryMaxHeapGauge.value()) + " MB" );
+                    System.out.println();
                 }
 
                 latestStatistics = jvmStatistics;
