@@ -44,16 +44,13 @@ public class ReportVmAndSystemMetricsToPrometheus {
         AtomicInteger myGauge = prometheusRegistry.gauge("numberGauge", new AtomicInteger(0));
         myGauge.set( 123 );
 
-        Runnable incrementTask = new Runnable() {
-            @Override
-            public void run() {
-                int i = myGauge.incrementAndGet();
-                System.out.println( "incremented=" + i );
-            }
+        Runnable incrementTask = () -> {
+            int i = myGauge.incrementAndGet();
+            System.out.println( "incremented=" + i );
         };
 
         ScheduledExecutorService scheduledExecutorService = Executors.newSingleThreadScheduledExecutor();
-        scheduledExecutorService.scheduleAtFixedRate(incrementTask,  0, 3, TimeUnit.SECONDS);
+        //scheduledExecutorService.scheduleAtFixedRate(incrementTask,  0, 10, TimeUnit.SECONDS);
 
         ClassLoaderMetrics classLoaderMetrics = new ClassLoaderMetrics();
         classLoaderMetrics.bindTo(prometheusRegistry);
@@ -74,7 +71,7 @@ public class ReportVmAndSystemMetricsToPrometheus {
     public static void main( String[] args ){
         new ReportVmAndSystemMetricsToPrometheus();
         try {
-            Thread.sleep( 20000_000);
+            Thread.sleep( 30*60_000);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }

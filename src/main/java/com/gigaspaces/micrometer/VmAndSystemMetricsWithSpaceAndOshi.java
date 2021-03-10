@@ -200,7 +200,7 @@ public class VmAndSystemMetricsWithSpaceAndOshi {
                     System.out.println( "From Micrometer !!! nonheap max=" + toMB( maxNonheapGauge.value() ) + " MB" );
 
                     System.out.println( "From Micrometer accumulated MAX heap=" + toMB( maxAccumulatedMemoryHeap ) + " MB" );
-                    System.out.println( "maxMemory=" + toMB( Runtime.getRuntime().maxMemory() ) + " MB" );
+                    System.out.println( "maxMemory from Runtime=" + toMB( Runtime.getRuntime().maxMemory() ) + " MB" );
                     System.out.println();
 
                     System.out.println( "From XAP memoryNonheapUsed=" + toMB( jvmStatistics.getMemoryNonHeapUsed() ) + " MB" );
