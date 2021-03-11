@@ -42,10 +42,9 @@ public class HsqldbMetricsRegistry extends StepMeterRegistry {
 
             String insertSQL = generateInsertQuery(tableName, timestamp, value, id.getTags(), values, columns);
 
-
             System.out.println("Publishing " + id + ", name=" + name + ", type=" + type + ", value=" + value + ", tableName=" + tableName);
+            System.out.println( insertSQL );
         } );
-
     }
 
     private String generateInsertQuery(String tableName, long timestamp, Object value, List<Tag> tags, List<Object> values, List<String> columnsList ) {

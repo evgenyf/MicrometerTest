@@ -25,6 +25,7 @@ public class MyFirstTest {
 
         Counter counter = Metrics.globalRegistry
                 .find("objects.instance").counter();
+
         System.out.println( "Counter=" + counter.count() );
         Assert.assertTrue(counter != null);
         Assert.assertTrue(counter.count() == 2.0);

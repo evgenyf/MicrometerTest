@@ -92,6 +92,8 @@ public class VmAndSystemMetricsWithSpaceAndOshi {
         }
 
         Gauge systemCpuUsage = Metrics.globalRegistry.find( "system.cpu.usage" ).gauge();
+        Gauge systemCpuCount = Metrics.globalRegistry.find( "system.cpu.count" ).gauge();
+
         Gauge processCpuUsedGauge = Metrics.globalRegistry.find("process.cpu.usage").gauge();
         Counter vmGcMemoryAllocatedCounter = Metrics.globalRegistry.find( "jvm.gc.memory.allocated" ).counter();
         Gauge vmClassesLoadedGauge = Metrics.globalRegistry.find("jvm.classes.loaded").gauge();
@@ -239,6 +241,7 @@ public class VmAndSystemMetricsWithSpaceAndOshi {
         System.out.println( "vmClassesLoaded=" + vmClassesLoaded );
         System.out.println( "vmGcMemoryAllocatedCount=" + vmGcMemoryAllocatedCount );
         System.out.println( "threadsCount=" + threadsCount );
+        System.out.println( "system cpu count=" + systemCpuCount.value() );
     }
 
     public static double toMB( double bytes ){

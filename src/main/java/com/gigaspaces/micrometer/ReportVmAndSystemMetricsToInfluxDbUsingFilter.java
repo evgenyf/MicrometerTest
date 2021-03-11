@@ -49,7 +49,7 @@ public class ReportVmAndSystemMetricsToInfluxDbUsingFilter {
                         ( id.getName().startsWith("jvm.gc.max.data.size") ||
                           id.getName().startsWith("jvm.gc.live.data.size") ||
                           id.getName().startsWith("jvm.gc.memory.allocated") ||
-                          id.getName().startsWith( "jvm.gc.memory.promoted" ) )
+                          id.getName().startsWith("jvm.gc.memory.promoted") )
                                 ? MeterFilterReply.ACCEPT : MeterFilterReply.DENY;
                 System.out.println( "filter reply of meter " + id + ": " + reply );
                 return reply;
